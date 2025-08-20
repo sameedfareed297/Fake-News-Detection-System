@@ -22,7 +22,7 @@ def clean_text(text):
 # -------------------------------
 # Load and prepare the data
 @st.cache_data
-def load_model():
+def load_model_and_data():
     fake = pd.read_csv("Fake.csv")
     true = pd.read_csv("True.csv")
     fake["class"] = 0
@@ -43,19 +43,40 @@ def load_model():
     model = LogisticRegression()
     model.fit(X_vec, y)
 
-    return model, vectorizer
+    return model, vectorizer, fake, true
 
 # -------------------------------
-# Load Model
-model, vectorizer = load_model()
+# Load Model & Data
+model, vectorizer, fake_df, true_df = load_model_and_data()
 
 # -------------------------------
 # Streamlit UI
 st.set_page_config(page_title="📰 Fake News Detector")
 st.title("🧠 Fake News Detector")
 st.markdown("Enter any  **News Article** below to check whether it's **REAL** or **FAKE**.")
+# -------------------------------
+# Show Example Data for Users
+st.subheader("📂 Example News Articles from Dataset")
 
-user_input = st.text_area("📝 Paste News Text Here:", height=250)
+example_news = None
+
+with st.expander("📰 View Sample Fake News"):
+    for i, news in enumerate(fake_df["text"].head(3)):  # show 3 for demo
+        if st.button(f"👉 Use Fake News {i+1}"):
+            example_news = news
+
+with st.expander("✅ View Sample Real News"):
+    for i, news in enumerate(true_df["text"].head(3)):
+        if st.button(f"👉 Use Real News {i+1}"):
+            example_news = news
+
+# If user clicks a button, fill text area
+if example_news:
+    st.session_state["news_input"] = example_news
+
+# User Input Section
+user_input = st.text_area("📝 Paste News Text Here:", height=250, 
+    key="news_input")
 
 if st.button("🔍 Check"):
     if user_input.strip() == "":
@@ -68,6 +89,7 @@ if st.button("🔍 Check"):
         if prediction == 1:
             st.success("✅ This news is **REAL**.")
             st.balloons()
-        else:
+        else:  
             st.error("🚫 This news is **FAKE**.")
             st.snow()
+
